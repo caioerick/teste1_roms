@@ -72,7 +72,7 @@ plt.title('lat = '+ str(np.round(lat[f],2)))
 savebat = plt.savefig(('../figures/bathymetry/batim_etopo1_perfil_lat' + str(np.round(lat[f],2)) + '.png'),dpi = 140)
 
 if(savebat):
-	print('Figura salva em o plot do perfil de batimetria...')
+	print('Figura salva em o plot do perfil de batimetria...\n\n\n\n\n')
 
 plt.close()
 del f
