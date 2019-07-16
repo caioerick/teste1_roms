@@ -1,0 +1,71 @@
+* HEADER *
+*
+# title         : SETUP parameter file for ROMS run
+# author        : Ana Krelling
+# e-mail        : akrelling@umassd.edu
+# date          : Jul, 2013
+# run_name      : FM1_1500_24_sim_inv_nud2sen66
+# experiment    : teste1
+# synopsis      : climatological winter T/S and FM velocity (NBUC only!) 
+*
+* GRID *
+*
+# lonmin        : -40
+# lonmax        : -26
+# latmin        : -11
+# latmax        : -1
+# resolution    : 0.05
+# Lm            : 279
+# Mm            : 201
+# spherical     : 1
+# klevels       : 20
+# theta_s       : 5
+# theta_b       : 1
+# tcline        : 200
+# hc            : 10
+# vtransform    : 1
+# vstretching   : 1
+# hmin          : 10
+# hmax          : 1500
+# hmaxc         : 50
+# slope         : 0.25
+# npass         : 4
+# nfinal        : 2
+# time          : 1
+*
+* FIELDS *
+*
+# ini_info      : none
+# ini_filename  : velFM_1500_24_sim_inv_r005_novabat.mat
+# frc_info      : none
+# frc_filename  : none
+# clm_info      : none
+# clm_filename  : velFM_1500_24_sim_inv_r005_novabat.mat
+# bry_info      : none
+# bry_filename  : velFM_1500_24_sim_inv_r005_novabat.mat
+# topo_info     : none
+# topo_filename : ../../essentials/etopo1_teste1.mat
+*
+* PATHNAMES *
+*
+# datadir       : /hosts/pacific.smast.umassd.edu/data00/users/lab_avijit/akrelling/tese_doc/roms_runs/FM1_1500_24_sim_inv_nud2sen66/init/
+# rundir        : ~/myroms/User/teste1
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
