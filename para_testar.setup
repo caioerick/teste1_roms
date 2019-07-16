@@ -44,7 +44,7 @@
 # bry_info      : none
 # bry_filename  : velFM_1500_24_sim_inv_r005_novabat.mat
 # topo_info     : none
-# topo_filename : ../../essentials/etopo1_teste1.mat
+# topo_filename : essentials/etopo1_teste1.mat
 *
 * PATHNAMES *
 *
