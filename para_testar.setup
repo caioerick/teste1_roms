@@ -4,7 +4,7 @@
 # author        : Ana Krelling
 # e-mail        : akrelling@umassd.edu
 # date          : Jul, 2013
-# run_name      : FM1_1500_24_sim_inv_nud2sen66
+# run_name      : FM1_teste1
 # experiment    : teste1
 # synopsis      : climatological winter T/S and FM velocity (NBUC only!) 
 *
@@ -26,7 +26,7 @@
 # vtransform    : 1
 # vstretching   : 1
 # hmin          : 10
-# hmax          : 1500
+# hmax          : 4500
 # hmaxc         : 50
 # slope         : 0.25
 # npass         : 4
@@ -44,7 +44,7 @@
 # bry_info      : none
 # bry_filename  : velFM_1500_24_sim_inv_r005_novabat.mat
 # topo_info     : none
-# topo_filename : essentials/etopo1_teste1.mat
+# topo_filename : ../essentials/etopo1_teste1.mat
 *
 * PATHNAMES *
 *
