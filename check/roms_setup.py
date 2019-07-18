@@ -1,5 +1,6 @@
 #!/usr/bin/python
 # -*- coding: ascii -*-
+#
 # Python Class to storage ROMS runs metadata
 # Rafael Soutelino - rsoutelino@gmail.com
 # Last modification: Aug 19, 2010
