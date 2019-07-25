@@ -22,8 +22,8 @@ plt.close('all')
 
 # tentar pegar direto do config.setup depois
 #############################################################
-# edit these options:                                       #
-8exptname = 'tcc_teste1'                                     #
+# edit these options:             '                                     #
+exptname = 'tcc_teste1'
 l = 0    # time-step (0 for initial fields)                 #
 lev = [-1,-200,-500,-1000,-4000] # levels for plotting      #
 #############################################################
