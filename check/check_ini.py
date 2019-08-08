@@ -12,29 +12,30 @@ import sys
 #from cookb_signalsmooth import smooth
 import netCDF4 as nc
 from roms_setup import run_setup, get_depths, zlevs, near
-from matplotlib.mlab import griddata
+#from matplotlib.mlab import griddata#############################################################
 from mpl_toolkits.basemap import Basemap
 import math
 
 # Adicionado por Caio
-from scipy.interpolate import griddata
+from scipy.interpolate import griddata############################################################
 plt.close('all')
 
 # tentar pegar direto do config.setup depois
 #############################################################
-# edit these options:             '                                     #
-exptname = 'tcc_teste1'
+# edit these options:                                       #
+#exptname = 'tcc_teste1'
+exptname = 'FM1_teste1'#############################
 l = 0    # time-step (0 for initial fields)                 #
 lev = [-1,-200,-500,-1000,-4000] # levels for plotting      #
 #############################################################
 
 print('--> Lendo o arquivo de configuração...\n')
-#run = run_setup('' + exptname + '.setup')
-run = run_setup('../config.setup')
+run = run_setup('../' + exptname + '_run.setup')
 
-print('\n') 
+
+print('\n')
 print('Experiment ' + exptname)
-print('\n') 
+print('\n')
 
 # plots parameters
 lev = np.array(lev)
@@ -43,7 +44,7 @@ d  = 4  # subsampling for quiver plots
 sc = .5 # scale for quiver plots
 
 ni          = np.array([-9.9,-1])    # latitude, in case PLOT = 2
-nj          = np.array([-39,-27])  # longitude, in case PLOT = 3 
+nj          = np.array([-39,-27])  # longitude, in case PLOT = 3
 dz          = 10          # delta z [m] for S -- > Z vertical interpolation
 Zlim        = (-1500, 0)  # z axis limits
 vsc         = (0, 31)
@@ -62,11 +63,11 @@ lonu  = grdfile.variables['lon_u'][:]
 lonv  = grdfile.variables['lon_v'][:]
 h     = grdfile.variables['h'][:]
 
-print('\n') 
+print('\n')
 print('Maximum depth of this run:' + str(h.max()) + 'm')
-print('\n') 
+print('\n')
 
-inifile  = nc.Dataset('../input/' + exptname + '_ini.nc')
+inifile  = nc.Dataset('../input/' + exptname + 'newgriddata_ini.nc')###############################################
 lon  = inifile.variables['lon_rho'][:]
 lat  = inifile.variables['lat_rho'][:]
 lonu = inifile.variables['lon_u'][:]
@@ -77,18 +78,19 @@ zeta = inifile.variables['zeta'][:]
 ubar = inifile.variables['ubar'][:]
 vbar = inifile.variables['vbar'][:]
 U    = inifile.variables['u'][:]
-V    = inifile.variables['v'][:]   
+V    = inifile.variables['v'][:]
 temp = inifile.variables['temp'][:]
 salt = inifile.variables['salt'][:]
-
-dx =lonv[0,1]-lonv[0,0] 
+#sys.exit()#######################################################################
+dx =lonv[0,1]-lonv[0,0]
 
 print('getting depths of s-levels...\n')
-
+temp = np.array(temp)
 zt   = get_depths(inifile, grdfile, l, 'temp')
+
 zu   = get_depths(inifile, grdfile, l, 'U')
 zv   = get_depths(inifile, grdfile, l, 'V')
-
+sys.exit()################################################################
 zeta = np.squeeze(zeta[l,...])
 U    = np.squeeze(U[l,...])
 V    = np.squeeze(V[l,...])
@@ -100,19 +102,27 @@ km, im, jm = temp.shape
 
 # checking for NaN
 f = np.where(np.isnan(U)==True); f = f[0]
-if f:
+f1 = np.where(np.isnan(V)==True); f1 = f1[0]
+f2 = np.where(np.isnan(ubar)==True); f2 = f2[0]
+f3 = np.where(np.isnan(vbar)==True); f3 = f3[0]
+f4 = np.where(np.isnan(temp)==True); f4 = f4[0]
+f5 = np.where(np.isnan(salt)==True); f5 = f5[0]
+f6 = np.where(np.isnan(zeta)==True); f6 = f6[0]
+
+
+if (f.shape[0]!=0) or (f1.shape[0]!=0) or (f2.shape[0]!=0) or (f3.shape[0]!=0) or (f4.shape[0]!=0) or (f5.shape[0]!=0) or (f6.shape[0]!=0):
     print('Warning!\n')
     print('Warning!\n')
     print('NaN found!!! The model grid might be bigger than the observation grid!!\n')
-del f
+del f, f1, f2, f3, f4, f5, f6
 
 
 m = Basemap(projection='merc',
-		llcrnrlat = run.latmin, urcrnrlat = run.latmax, 
+		llcrnrlat = run.latmin, urcrnrlat = run.latmax,
 		llcrnrlon = run.lonmin, urcrnrlon = run.lonmax,
 		 lat_ts=0, resolution='i')
 
-lonm, latm = m(lon, lat)	
+lonm, latm = m(lon, lat)
 lonp = lonm[::d, ::d]
 latp = latm[::d, ::d]
 
@@ -141,19 +151,19 @@ for kk in range(0,lev.size,1):
 
 	# color limits
 	if lev[kk] > -80:
-		hsct = (24, 28) # temperature color scale 
-		hscs = (34, 37) # salinity color scale 
+		hsct = (24, 28) # temperature color scale
+		hscs = (34, 37) # salinity color scale
 	elif ((lev[kk] <= -80) & (lev[kk] > -200)):
-		hsct = (10, 27) 
+		hsct = (10, 27)
 		hscs = (34, 37)
 	elif ((lev[kk] <= -200) & (lev[kk] > -300)):
         	hsct = (11, 18)
         	hscs = (35.2, 36.4)
 	elif ((lev[kk] <= -300) & (lev[kk] > -800)):
-		hsct = (3, 15) 
-		hscs = (34, 36) 
+		hsct = (3, 15)
+		hscs = (34, 36)
 	else:
-		hsct = (0, 6) 
+		hsct = (0, 6)
 		hscs = (34.2, 35)
 
 
@@ -179,11 +189,19 @@ for kk in range(0,lev.size,1):
 			v1[a,b] = np.interp(lev[kk], zv[:, a, b], V[:, a, b] )
 
 	# interpolating horizontally
-	u1 = griddata((lonu.ravel(), latu.ravel()), u1.ravel(), (lon, lat)) 
-	v1 = griddata((lonv.ravel(), latv.ravel()), v1.ravel(), (lon, lat))
+	#u1 = griddata((lonu.ravel(), latu.ravel()), u1.ravel(), (lon, lat))################################
+	#v1 = griddata((lonv.ravel(), latv.ravel()), v1.ravel(), (lon, lat))##################################
 
-	ubar1 = griddata((lonu.ravel(), latu.ravel()), ubar.ravel(), (lon, lat)) 
-	vbar1 = griddata((lonv.ravel(), latv.ravel()), vbar.ravel(), (lon, lat))
+	#ubar1 = griddata((lonu.ravel(), latu.ravel()), ubar.ravel(), (lon, lat))################################
+	#vbar1 = griddata((lonv.ravel(), latv.ravel()), vbar.ravel(), (lon, lat))#############################
+	u1 = griddata(lonu.ravel(), latu.ravel(), u1.ravel(), lon, lat)################################
+	v1 = griddata(lonv.ravel(), latv.ravel(), v1.ravel(), lon, lat)##################################
+
+	ubar1 = griddata(lonu.ravel(), latu.ravel(), ubar.ravel(), lon, lat)################################
+	vbar1 = griddata(lonv.ravel(), latv.ravel(), vbar.ravel(), lon, lat)#############################
+
+
+
 
 	# masking in land values
 	t1    = np.ma.masked_where(h < 1, t1)
@@ -218,7 +236,7 @@ for kk in range(0,lev.size,1):
 
 	# batimetry
 	zb = np.ma.masked_where(h >= lev[kk]*-1, h)
-	m.contourf(lonm, latm, zb, colors=('0.7'), alpha=0.5) 
+	m.contourf(lonm, latm, zb, colors=('0.7'), alpha=0.5)
 	m.contour(lonm,latm,h, levels = [100], colors = 'k')
 
 	# details
@@ -234,7 +252,7 @@ for kk in range(0,lev.size,1):
 	plt.text(tx2,ty2,text,color='k',fontsize=10,fontweight='bold')
 
 
-	string =  "plt.savefig('figures/initial_field/vel-temp_" \
+	string =  "plt.savefig('../figures/initial_field/vel-temp_" \
 				+ str(lev[kk]) +"m" + ".png')"
 	exec(string)
 	del hsct, Q, qk
@@ -259,7 +277,7 @@ for kk in range(0,lev.size,1):
 
 	# batimetry
 	zb = np.ma.masked_where(h >= lev[kk]*-1, h)
-	m.contourf(lonm, latm, zb, colors=('0.7'), alpha=0.5) 
+	m.contourf(lonm, latm, zb, colors=('0.7'), alpha=0.5)
 	m.contour(lonm,latm,h,levels = [100],colors = 'k')
 
 	# details
@@ -275,7 +293,7 @@ for kk in range(0,lev.size,1):
 	text = 'Z: '+ str(lev[kk]) +' m' 
 	plt.text(tx,ty,text,color='k',fontsize=10,fontweight='bold')
 
-	string =  "plt.savefig('figures/initial_field/vel-salt_" \
+	string =  "plt.savefig('../figures/initial_field/vel-salt_" \
 				+ str(lev[kk]) +"m" + ".png')"
 	exec(string)
 	del hscs, u1, v1, t1, s1, Q, qk
@@ -297,7 +315,7 @@ qk = plt.quiverkey(Q,ax1,ay1,0.2,'0.2m/s',coordinates='data',labelpos='N',zorder
 
 # betimetry
 zb = np.ma.masked_where(h >= 10, h)
-m.contourf(lonm, latm, zb, colors=('0.7'), alpha=0.5) 
+m.contourf(lonm, latm, zb, colors=('0.7'), alpha=0.5)
 m.contour(lonm,latm,h,levels = [100],colors = 'k')
 
 # details
@@ -309,12 +327,12 @@ m.drawparallels(np.arange(run.latmin, run.latmax, 1),
 m.drawmeridians(np.arange(run.lonmin, run.lonmax, 2),
 	labels=[0, 0, 0, 1], dashes=[1,1000], zorder=7)
 
-text = '$\eta$ x Vbar' 
+text = '$\eta$ x Vbar'
 plt.text(tx2,ty2,text,color='k',fontsize=10,fontweight='bold')
 
-string =  "plt.savefig('figures/initial_field/vbar-zeta" + ".png')"
+string =  "plt.savefig('../figures/initial_field/vbar-zeta" + ".png')"
 exec(string)
-plt.close()	
+plt.close()
 del Q, qk
 zi = dz * np.ceil( zt.min() / dz )
 zi = np.arange(zi, 0+dz, dz)
@@ -322,20 +340,20 @@ zi = np.arange(zi, 0+dz, dz)
 # zonal velocity slice -------------------------------------------------------
 
 for ii in range(0,ni.size):
-	
+
 	# velocity
-	
+
 	xsec = latv[:,0]
 	fsec = near(xsec,ni[ii])
 	xsec = lonv[0,:]
 	z    = np.squeeze( zv[:, fsec, :] )
-	prop = np.squeeze( V[: ,fsec , :] ) 	
+	prop = np.squeeze( V[: ,fsec , :] )
 	xsec.shape = (1, xsec.size)
 	x = np.repeat(xsec, 40, axis=0)
 	prop = np.ma.masked_where(prop > 1e10, prop)
 
 	# transport calculation
-	auxz = np.array(np.gradient(z));auxz = auxz[0,...]; 
+	auxz = np.array(np.gradient(z));auxz = auxz[0,...];
 	pp = np.where(prop>0);
 	transp = (prop[pp]*(dx*111120*np.cos(math.radians(ni[ii])))*auxz[pp]).sum()
 	nn = np.where(prop<0);
@@ -350,14 +368,14 @@ for ii in range(0,ni.size):
 	plt.clabel(CS,levelsp[::2],inline=1,fmt='%3.1f',fontsize=8)
 	CS = plt.contour(x,z,prop,levels = levelsn, colors = 'b')
 	plt.clabel(CS,levelsn[::2],inline=1,fmt='%3.1f',fontsize=8)
-	plt.axis([run.lonmin, run.lonmax, Zlim[0], Zlim[1]])	    	
+	plt.axis([run.lonmin, run.lonmax, Zlim[0], Zlim[1]])
 	plt.xlabel('Longitude')
-	plt.title('Cross-section Velocity, lat = '+ str(round(latv[fsec,0],2)))	
+	plt.title('Cross-section Velocity, lat = '+ str(round(latv[fsec,0],2)))
 	plt.ylabel('Depth')
 	plt.text(x[5,5],Zlim[0]+20,'Transport = '+ "{:5.2f}".format(transp/1000000)+' Sv')
 	plt.text(x[5,5],Zlim[0]+70,'Transport = '+ "{:5.2f}".format(transn/1000000)+' Sv')
 	plt.text(x[5,5],Zlim[0]+120,'Total transport = '+"{:5.2f}".format((transp+transn)/1000000)+' Sv')
-	string =  "plt.savefig('figures/initial_field/vel-zon_" + str(round(latv[fsec,0],2)) + ".png')"
+	string =  "plt.savefig('../figures/initial_field/vel-zon_" + str(round(latv[fsec,0],2)) + ".png')"
 	exec(string)
 	plt.close()
 
@@ -369,14 +387,14 @@ for ii in range(0,ni.size):
 	plt.clabel(CS,levelsp[::2],inline=1,fmt='%3.1f',fontsize=8)
 	CS = plt.contour(x,z,prop,levels = levelsn, colors = 'b')
 	plt.clabel(CS,levelsn[::2],inline=1,fmt='%3.1f',fontsize=8)
-	plt.axis([run.lonmin, run.lonmax, run.hmax*-1, Zlim[1]])	    	
+	plt.axis([run.lonmin, run.lonmax, run.hmax*-1, Zlim[1]])
 	plt.xlabel('Longitude')
-	plt.title('Cross-section Velocity, lat = '+ str(round(latv[fsec,0],2)))	
+	plt.title('Cross-section Velocity, lat = '+ str(round(latv[fsec,0],2)))
 	plt.ylabel('Depth')
 	plt.text(x[5,5],run.hmax*-1+100,'Transport = '+ "{:5.2f}".format(transp/1000000)+' Sv')
 	plt.text(x[5,5],run.hmax*-1+300,'Transport = '+ "{:5.2f}".format(transn/1000000)+' Sv')
 	plt.text(x[5,5],run.hmax*-1+500,'Total transport = '+"{:5.2f}".format((transp+transn)/1000000)+' Sv')
-	string =  "plt.savefig('figures/initial_field/vel-zon_hmax_" + str(round(latv[fsec,0],2)) + ".png')"
+	string =  "plt.savefig('../figures/initial_field/vel-zon_hmax_" + str(round(latv[fsec,0],2)) + ".png')"
 	exec(string)
 	plt.close()
 
@@ -388,7 +406,7 @@ for ii in range(0,ni.size):
 	fsec = near(xsec,ni[ii])
 	xsec = lonv[0,:]
 	z    = np.squeeze( zt[:, fsec, :] )
-	prop = np.squeeze( temp[: ,fsec , :] ) 
+	prop = np.squeeze( temp[: ,fsec , :] )
 	xsec.shape = (1, xsec.size)
 	x = np.repeat(xsec, 40, axis=0)
 	prop = np.ma.masked_where(prop > 1e10, prop)
@@ -398,26 +416,26 @@ for ii in range(0,ni.size):
 	plt.colorbar()
 	plt.axis([run.lonmin, run.lonmax, run.hmax*-1, Zlim[1]])
 	plt.xlabel('Longitude')
-	plt.title('Temperature, lat = '+ str(round(lat[fsec,0],2)))	
+	plt.title('Temperature, lat = '+ str(round(lat[fsec,0],2)))
 	plt.ylabel('Depth')
-	string =  "plt.savefig('figures/initial_field/temp-zon_" + str(round(lat[fsec,0],2)) + ".png')"
-	exec(string)		
+	string =  "plt.savefig('../figures/initial_field/temp-zon_" + str(round(lat[fsec,0],2)) + ".png')"
+	exec(string)
 	plt.close()
 	del fsec, z, prop
 
 del ii
 
-# meridional slices ------------------------------------------------------------- 
+# meridional slices -------------------------------------------------------------
 
 for jj in range(0,nj.size):
-	
+
 	# velocity
-	
+
 	xsec = lonu[0, :]
 	fsec = near(xsec,nj[jj])
 	xsec = latu[:, 0]
 	z    = np.squeeze( zu[:, :, fsec] )
-	prop = np.squeeze( U[: ,: , fsec] ) 
+	prop = np.squeeze( U[: ,: , fsec] )
 	xsec.shape = (1, xsec.size)
 	x = np.repeat(xsec, 40, axis=0)
 	prop = np.ma.masked_where(prop > 1e10, prop)
@@ -438,14 +456,14 @@ for jj in range(0,nj.size):
 	plt.clabel(CS,levelsp[::2],inline=1,fmt='%3.1f',fontsize=8)
 	CS = plt.contour(x,z,prop,levels = levelsn, colors = 'b')
 	plt.clabel(CS,levelsn[::2],inline=1,fmt='%3.1f',fontsize=8)
-	plt.axis([run.latmin, run.latmax, Zlim[0], Zlim[1]])	    	
+	plt.axis([run.latmin, run.latmax, Zlim[0], Zlim[1]])
 	plt.text(x[5,5],Zlim[0]+20,'Transport = '+"{:5.2f}".format(transp/1000000)+' Sv')
 	plt.text(x[5,5],Zlim[0]+70,'Transport = '+"{:5.2f}".format(transn/1000000)+' Sv')
 	plt.text(x[5,5],Zlim[0]+120,'Total transport = '+"{:5.2f}".format((transp+transn)/1000000)+' Sv')
 	plt.xlabel('Latitude')
-	plt.title('Cross-section Velocity, lon = '+ str(round(lonu[0,fsec],2)))	
+	plt.title('Cross-section Velocity, lon = '+ str(round(lonu[0,fsec],2)))
 	plt.ylabel('Depth')
-	string =  "plt.savefig('figures/initial_field/vel-mer_" + str(round(lonu[0,fsec],2)) + ".png')"
+	string =  "plt.savefig('../figures/initial_field/vel-mer_" + str(round(lonu[0,fsec],2)) + ".png')"
 	exec(string)
 	plt.close()
 
@@ -457,40 +475,40 @@ for jj in range(0,nj.size):
 	plt.clabel(CS,levelsp[::2],inline=1,fmt='%3.1f',fontsize=8)
 	CS = plt.contour(x,z,prop,levels = levelsn, colors = 'b')
 	plt.clabel(CS,levelsn[::2],inline=1,fmt='%3.1f',fontsize=8)
-	plt.axis([run.latmin, run.latmax, run.hmax*-1, Zlim[1]])	    	
+	plt.axis([run.latmin, run.latmax, run.hmax*-1, Zlim[1]])
 	plt.text(x[5,5],run.hmax*-1+100,'Transport = '+"{:5.2f}".format(transp/1000000)+' Sv')
 	plt.text(x[5,5],run.hmax*-1+300,'Transport = '+"{:5.2f}".format(transn/1000000)+' Sv')
 	plt.text(x[5,5],run.hmax*-1+500,'Total transport = '+"{:5.2f}".format((transp+transn)/1000000)+' Sv')
 	plt.xlabel('Latitude')
-	plt.title('Cross-section Velocity, lon = '+ str(round(lonu[0,fsec],2)))	
+	plt.title('Cross-section Velocity, lon = '+ str(round(lonu[0,fsec],2)))
 	plt.ylabel('Depth')
-	string =  "plt.savefig('figures/initial_field/vel-mer_hmax_" + str(round(lonu[0,fsec],2)) + ".png')"
+	string =  "plt.savefig('../figures/initial_field/vel-mer_hmax_" + str(round(lonu[0,fsec],2)) + ".png')"
 	exec(string)
 	plt.close()
 
 	del fsec, z, prop, transp, transn
 
-	# temperature 
+	# temperature
 
 	xsec = lonu[0, :]
 	fsec = near(xsec,nj[jj])
 	xsec = latu[:, 0]
 	z    = np.squeeze( zt[:, :, fsec] )
-	prop = np.squeeze( temp[: ,: , fsec] ) 
-	   	
+	prop = np.squeeze( temp[: ,: , fsec] )
+
 	xsec.shape = (1, xsec.size)
 	x = np.repeat(xsec, 40, axis=0)
 	prop = np.ma.masked_where(prop > 1e10, prop)
-	
+
 	fig1 = plt.figure(1, figsize=(12,6), facecolor='w')
 	plt.contourf(x,z,prop, np.arange(vsc[0], vsc[1], vst),cmap=plt.cm.Spectral_r)	# meu X-axis tem que ser latitude
 	plt.colorbar()
 	plt.axis([run.latmin, run.latmax, run.hmax*-1, Zlim[1]])
 	plt.xlabel('Latitude')
-	plt.title('Temperature, lon = '+ str(round(lonu[0,fsec],2)))	
+	plt.title('Temperature, lon = '+ str(round(lonu[0,fsec],2)))
 	plt.ylabel('Depth')
-	string =  "plt.savefig('figures/initial_field/temp-mer_" + str(round(lonu[0,fsec],2)) + ".png')"
-	exec(string)		
+	string =  "plt.savefig('../figures/initial_field/temp-mer_" + str(round(lonu[0,fsec],2)) + ".png')"
+	exec(string)
 	plt.close()
 	del fsec, z, prop
 
