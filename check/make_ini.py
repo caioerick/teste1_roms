@@ -5,7 +5,7 @@
 #
 # Rafael Soutelino - rsoutelino@gmail.com
 #
-# Using some material from Matlab scripts by 
+# Using some material from Matlab scripts by
 # "Copyright (c) 2003 UCLA - Patrick Marchesiello"
 #
 # Last modification: Aug, 2010
@@ -27,32 +27,35 @@ import sys
 from scipy.interpolate import griddata
 
 # classes and functions to the computings
-from roms_setup import run_setup, zlev, ztosigma 
+from roms_setup import run_setup, zlev, ztosigma
 
 #####################################################################
 
 # SCRIPT START ######################################################
 
 # Basic Settings:
+case = 'teste1'
 filenamestr = '_ini.nc'
 filetypestr = 'ROMS Initial Conditions file'
 
 
 # READING PREVIOUSLY BUILT RELEVANT FILES: ###########################
 # metadata ascii file
-# OA-created netcdf initial T, S file 
+# OA-created netcdf initial T, S file
 # grid netcdf file
 
 
 print('--> Lendo o arquivo de configuração...\n')
-run = run_setup('../config.setup')
+run = run_setup('../tcc_teste1.setup')
 
 print('\n')
 print('Experiment ' + run.run_name)
 print('\n')
 
 print('==> READING FEATURE MODEL FIELD ...\n')
-datafile = sp.loadmat(run.ini_filename)
+datafile = sp.loadmat(run.ini_filename)##############################################################
+#datafile = sp.loadmat(run.ini_filename)##############################################################
+
 
 # assigning some variables from data file
 Zlev   = datafile['z'][:].ravel(); Zlev = np.abs(Zlev); Zlev = -Zlev
@@ -95,10 +98,20 @@ Lv2 = Lr2;   Mv2 = Mr2-1
 cosa = np.cos(angle); sina = np.sin(angle); del angle
 rmask2 = np.ma.masked_where(rmask2 == 0, rmask2)
 
-hu = griddata((rlon2.ravel(), rlat2.ravel()), h2.ravel(), (ulon2, ulat2))
-hv = griddata((rlon2.ravel(), rlat2.ravel()), h2.ravel(), (vlon2, vlat2))
+#griddata novo#################################################################
+hu = griddata((rlon2.ravel(), rlat2.ravel()), h2.ravel(), (ulon2, ulat2),method='linear')
+hv = griddata((rlon2.ravel(), rlat2.ravel()), h2.ravel(), (vlon2, vlat2),method='linear')
+#griddata original
+#hu = griddata(rlon2.ravel(), rlat2.ravel(), h2.ravel(), ulon2, ulat2)
+#hv = griddata(rlon2.ravel(), rlat2.ravel(), h2.ravel(), vlon2, vlat2)
+
 
 #zlev(h2, run.theta_s, run.theta_b, run.tcline, run.klevels)
+run.theta_s = int(run.theta_s)
+run.theta_b = int(run.theta_b)
+run.tcline = int(run.tcline)
+run.klevels = int(run.klevels)
+
 
 [Zsig,dZsig]   = zlev(h2, run.theta_s, run.theta_b, run.tcline, run.klevels)
 [ZsigU,dZsigU] = zlev(hu, run.theta_s, run.theta_b, run.tcline, run.klevels)
@@ -120,46 +133,172 @@ Zlev2 = np.zeros([N1, 1])
 
 print('\n\n==> Interpolating temperature...\n')
 
+
+############################################################################
+plt.ion()
+
+m = Basemap(projection='merc', llcrnrlat=run.latmin, urcrnrlat=run.latmax,
+    llcrnrlon=run.lonmin, urcrnrlon=run.lonmax, lat_ts=0, resolution='l')
+
+rlon2m, rlat2m = m(rlon2,rlat2)
+############################################################################
+
 print('N1:', N1)
 for k in np.arange(0, N1, 1):
     nivel = Zlev[k]*(-1)
     print('TEMP:  Z Level = ', nivel, ' m')
     z1  = np.squeeze(temp[k,:,:])
-    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()), z1.ravel(), (rlon2,rlat2))
-#    z2[N1-k-1,:,:] = np.squeeze(temp[k,:,:])
+    f = np.where(np.isnan(z1)==True);
+    if f[0].size != 0:
+        print('NaN found in original')
+    else:
+        print('Original OK')
+    del f
+    ############################################################################
+    fig1 = plt.figure(1,figsize=(15,8),facecolor='w')
+    plt.subplot(121),
+    # plt.figure()
+    ff = np.where(z1<1000);
+    m.contourf(rlon2m, rlat2m, z1,levels=np.arange(z1.min(),z1[ff].max()+0.2,0.1))
+    #m.pcolor(rlon2m, rlat2m, z1)
+    plt.clim(z1.min(),z1[ff].max()+0.1)
+    plt.colorbar(shrink=0.5)    
+    m.drawcoastlines(zorder=5)
+    #m.drawcountries(zorder=4)
+    #m.fillcontinents(color=('0.7'),lake_color='aqua',zorder=3)
+    m.drawparallels(np.arange(run.latmin, run.latmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=6)
+    m.drawmeridians(np.arange(run.lonmin, run.lonmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=7)
+    plt.title('original min ' + str(round(z1.min())) + ' /max ' + str(round(z1.max()))+ ' / ' + str(round(z1[z1<1000].max())));
+
+    ############################################################################
+
+    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()), z1.ravel(), (rlon2,rlat2),method='nearest')#new
+    #z2[N1-k-1,:,:] = griddata(lon.ravel(),lat.ravel(), z1.ravel(), rlon2,rlat2)#old
+    f = np.where(np.isnan(z2[N1-k-1,:,:].squeeze())==True);
+    if f[0].size != 0:
+        print('NaN found in gridado')
+    else:
+        print('Gridado OK')
+    del f
+    aa = z2[N1-k-1,:,:].squeeze()
+
+    ############################################################################
+    plt.subplot(122),
+    # plt.figure()
+    m.contourf(rlon2m, rlat2m, z2[N1-k-1,:,:].squeeze(),levels=np.arange(z1.min(),z1[ff].max()+0.2,0.1))
+    #m.pcolor(rlon2m, rlat2m, z2[N1-k-1,:,:].squeeze())
+    plt.clim(z1.min(),z1[ff].max()+0.1)
+    plt.colorbar(shrink=0.5)    
+    m.drawcoastlines(zorder=5)
+    #m.drawcountries(zorder=4)
+    #m.fillcontinents(color=('0.7'),lake_color='aqua',zorder=3)
+    m.drawparallels(np.arange(run.latmin, run.latmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=6)
+    m.drawmeridians(np.arange(run.lonmin, run.lonmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=7)
+    plt.title('Gridado min ' + str(round(z2[N1-k-1,:,:].squeeze().min())) + ' /max ' + str(round(z2[N1-k-1,:,:].squeeze().max()))+ ' / ' + str(round(aa[aa<1000].max())));
+    del aa
+    ###########################################################################
+    
+    #z2[N1-k-1,:,:] = np.squeeze(temp[k,:,:])
     Zlev2[N1-k-1]  = Zlev[k]
+    # Zlev -> profundidade, negativa
+    # Zsig -> colocar de Z para sigma
+    # z2 -> temperatura gridada
+    del z1,ff 
+    plt.pause(2)
+    plt.close()
+
 
 print('\n\n==> Interpolating Temp FROM Z --> S COORD ...\n')
-TEMP = ztosigma(z2,Zsig,Zlev2); del z1, z2
+TEMP = ztosigma(z2,Zsig,Zlev2); #del z1, z2 # nesse caso aqui TEMP[0,...] corresponde ao fundo
+del z2
 
-###
+
+for k in np.arange(0, run.klevels, 1):
+    aa = Zsig[k,:,:].squeeze()
+    f = np.where(np.isnan(Zsig[k,:,:].squeeze())==True);
+    if f[0].size != 0:
+        print('NaN found in Zsig')
+    else:
+        print('Zsig OK')
+    del f
+    fig1 = plt.figure(1,figsize=(15,8),facecolor='w')
+    plt.subplot(121),
+    # plt.figure()
+    # m.pcolor(rlon2m, rlat2m, z1, vmin=0, vmax=30)
+    # m.pcolor(rlon2m, rlat2m, TEMP[k,:,:].squeeze())
+    m.contourf(rlon2m, rlat2m, aa,levels=np.arange(aa.min(),aa.max()+10,10))
+    plt.clim(aa.min(),aa.max()+10)
+    plt.colorbar(shrink=0.5)    
+    m.drawcoastlines(zorder=5)
+    #m.drawcountries(zorder=4)
+    #m.fillcontinents(color=('0.7'),lake_color='aqua',zorder=3)
+    m.drawparallels(np.arange(run.latmin, run.latmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=6)
+    m.drawmeridians(np.arange(run.lonmin, run.lonmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=7)
+    plt.title('slev = ' + str(run.klevels-k));
+    del aa
+    ##################################################################
+    plt.subplot(122),
+    aa = TEMP[k,:,:].squeeze()
+    # plt.figure()
+    # m.pcolor(rlon2m, rlat2m, z1, vmin=0, vmax=30)
+    # m.pcolor(rlon2m, rlat2m, TEMP[k,:,:].squeeze())
+    m.contourf(rlon2m, rlat2m, TEMP[k,:,:].squeeze(),levels=np.arange(aa.min(),aa[aa<1000].max()+0.2,0.1))
+    plt.clim(TEMP[k,:,:].squeeze().min(),aa[aa<1000].max()+0.1)
+    plt.colorbar(shrink=0.5)    
+    m.drawcoastlines(zorder=5)
+    #m.drawcountries(zorder=4)
+    #m.fillcontinents(color=('0.7'),lake_color='aqua',zorder=3)
+    m.drawparallels(np.arange(run.latmin, run.latmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=6)
+    m.drawmeridians(np.arange(run.lonmin, run.lonmax, 5),
+    labels=[0, 0, 0, 0], dashes=[1,3], zorder=7)
+    plt.title('slev = ' + str(run.klevels-k) + ' / sleveld min ' + 
+        str(round(TEMP[k,:,:].squeeze().min())) + ' /max ' + 
+        str(round(TEMP[k,:,:].squeeze().max())) + ' /max ' + 
+        str(aa[aa<1000].max()));
+    plt.pause(1)
+    plt.close()
+    del aa
+
+#######################################################################################################
 
 z2    = np.zeros([N1, Jrho, Irho])
 print('\n\n==> Interpolating salinity...\n')
 for k in np.arange(0, N1, 1): 
     print('SALT:  Z Level = ' + str(-1*Zlev[k]) + ' m')
     z1  = np.squeeze(salt[k,:,:])
-    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()),z1.ravel(),(rlon2,rlat2))
+    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()),z1.ravel(),(rlon2,rlat2),method='linear')#new
+    #z2[N1-k-1,:,:] = griddata(lon.ravel(),lat.ravel(),z1.ravel(),rlon2,rlat2)#old
+
 #    z2[N1-k-1,:,:] = np.squeeze(salt[k,:,:])
     Zlev2[N1-k-1]  = Zlev[k]
 
 print('\n\n==> INTERPOLATING SALT FROM Z --> S COORD ...\n')
 SALT = ztosigma(z2,Zsig,Zlev2);
-
+del z1, z2
 ###
 
 z2    = np.zeros([N1, Mu2, Lu2])
 print('\n\n==> INTERPOLATING U-velocity ...\n')
 for k in np.arange(0, N1, 1): 
     print('U-Vel:  Z Level = ' + str(-1*Zlev[k]) + ' m')
+
     z1  = np.squeeze(u[k,:,:])
-    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()),z1.ravel(),(ulon2,ulat2))
+    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()),z1.ravel(),(ulon2,ulat2),method='linear')#new
+    #z2[N1-k-1,:,:] = griddata(lon.ravel(),lat.ravel(),z1.ravel(),ulon2,ulat2)#old
+
 #    z2[N1-k-1,:,:] = np.squeeze(u[k,:,:])
     Zlev2[N1-k-1]  = Zlev[k]
 
-print('\n\n==> INTERPOLATING V-Vel FROM Z --> S COORD ...\n')
+print('\n\n==> INTERPOLATING U-Vel FROM Z --> S COORD ...\n')
 U   = ztosigma(z2, ZsigU, Zlev2);
-
+del z1, z2
 
 ###
 
@@ -168,45 +307,49 @@ print('\n\n==> INTERPOLATING V-velocity ...\n')
 for k in np.arange(0, N1, 1): 
     print('V-Vel:  Z Level = ' + str(-1*Zlev[k]) + ' m')
     z1  = np.squeeze(v[k,:,:])
-    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()),z1.ravel(),(vlon2,vlat2))
+    z2[N1-k-1,:,:] = griddata((lon.ravel(),lat.ravel()),z1.ravel(),(vlon2,vlat2),method='linear')#new
+    #z2[N1-k-1,:,:] = griddata(lon.ravel(),lat.ravel(),z1.ravel(),vlon2,vlat2)#old
+
 #    z2[N1-k-1,:,:] = np.squeeze(v[k,:,:])
     Zlev2[N1-k-1]  = Zlev[k]
 
 print('\n\n==> INTERPOLATING V-Vel FROM Z --> S COORD ...\n')
 V   = ztosigma(z2, ZsigV, Zlev2);
-
+del z1, z2
 ###
 
 print('\n\n==> INTERPOLATING UBAR-velocity ...\n')
-UBAR = griddata((lon.ravel(),lat.ravel()),ubar.ravel(),(ulon2,ulat2))
+UBAR = griddata((lon.ravel(),lat.ravel()),ubar.ravel(),(ulon2,ulat2),method='linear')#new
+#UBAR = griddata(lon.ravel(),lat.ravel(),ubar.ravel(),ulon2,ulat2)#old
+
 
 print('\n\n==> INTERPOLATING VBAR-velocity ...\n')
-VBAR = griddata((lon.ravel(),lat.ravel()),vbar.ravel(),(vlon2,vlat2))
+VBAR = griddata((lon.ravel(),lat.ravel()),vbar.ravel(),(vlon2,vlat2),method='linear')#new
+#VBAR = griddata(lon.ravel(),lat.ravel(),vbar.ravel(),vlon2,vlat2)#old
+
 
 print('\n\n==> INTERPOLATING FREE-SURFACE ...\n')
-ZETA = griddata((lon.ravel(),lat.ravel()),zeta.ravel(),(rlon2,rlat2))
+ZETA = griddata((lon.ravel(),lat.ravel()),zeta.ravel(),(rlon2,rlat2),method='linear')#new
+#ZETA = griddata(lon.ravel(),lat.ravel(),zeta.ravel(),rlon2,rlat2)#old
+
 
 # testing for NaN
 f = np.where(np.isnan(U)==True); f = f[0]
-if f.size >=1 :
-    print('Warning! ')
-    print('Warning! ')
-    print('NaN found!!! The model grid might be bigger than the observation grid!!')
-    print('NaN encontrado em U')
-    print('U shape: ', U.shape)
-    print('Prof -1:\n', U[-1,::],'\n')
-del f
+f1 = np.where(np.isnan(V)==True); f1 = f1[0]
+f2 = np.where(np.isnan(VBAR)==True); f2 = f2[0]
+f3 = np.where(np.isnan(UBAR)==True); f3 = f3[0]
+f4 = np.where(np.isnan(TEMP)==True); f4 = f4[0]
+f5 = np.where(np.isnan(SALT)==True); f5 = f5[0]
+f6 = np.where(np.isnan(ZETA)==True); f6 = f6[0]
 
-# testing for NaN
-f = np.where(np.isnan(V)==True); f = f[0]
-if f.size >=1 :
-    print('Warning! ')
-    print('Warning! ')
-    print('NaN found!!! The model grid might be bigger than the observation grid!!')
-    print('NaN encontrado em V')
-    print('V shape: ', V.shape)
-    print('Prof -1:\n', V[-1,::],'\n')
-del f
+
+if (f.shape[0]!=0) or (f1.shape[0]!=0) or (f2.shape[0]!=0) or (f3.shape[0]!=0) or (f4.shape[0]!=0) or (f5.shape[0]!=0) or (f6.shape[0]!=0):
+    print('Warning!\n')
+    print('Warning!\n')
+    print('NaN found!!! The model grid might be bigger than the observation grid!!\n')
+del f, f1, f2, f3, f4, f5, f6
+
+
 
 ##############################################################################
 
@@ -229,7 +372,7 @@ Np = N + 1
 
 if run.spherical == 1:
     spherical = 'T'
-else: 
+else:
     spherical = 'F'
 
 ds       =  1.0 / N
@@ -247,8 +390,7 @@ Csw      =  (1-theta_b)*Pthetaw + theta_b*Rthetaw
 
 print('==> WRITING NETCDF INITIAL CONDITIONS FILE ...\n')
 
-ncfile = Dataset('../input/' + run.run_name + filenamestr, mode='w',
-    clobber='true', format='NETCDF3_CLASSIC')
+ncfile = Dataset('../input/' + run.run_name + 'newgriddata'+ filenamestr, mode='w',clobber='true', format='NETCDF3_CLASSIC')###################
 
 # creating DIMENSIONS
 ncfile.createDimension('xi_rho', size=Lp)
@@ -485,19 +627,19 @@ print('==> #######################################################\n')
 del ncfile
 print('==> PLOTTING FIELDS FOR USER VERIFICATION  ...\n')
 
-ncfile = Dataset('../input/' + run.run_name + filenamestr, mode='r')
+ncfile = Dataset('../input/' + run.run_name + 'newgriddata'+filenamestr, mode='r')#####################################
 lon    = ncfile.variables['lon_rho'][:]
 lat    = ncfile.variables['lat_rho'][:]
-print('N: ', N)
-print('N-1: ', N-1)
-print('N/2: ', N/2)
+#print('N: ', N)
+#print('N-1: ', N-1)
+#print('N/2: ', N/2)
 temp   = ncfile.variables['temp'][0, (N-1, int(N/2), 0), :, :]
 salt   = ncfile.variables['salt'][0, (N-1, int(N/2), 0), :, :]
 
 m = Basemap(projection='merc', llcrnrlat=run.latmin, urcrnrlat=run.latmax,
     llcrnrlon=run.lonmin, urcrnrlon=run.lonmax, lat_ts=0, resolution='l')
 
-lon, lat = m(lon,lat) 
+lon, lat = m(lon,lat)
 
 fig1 = plt.figure(1,figsize=(15,8),facecolor='w')
 
@@ -515,7 +657,8 @@ for k in (0, 1 ,2):
 
 for k in (3, 4 ,5):
     plt.subplot(2,3,k+1)
-    m.pcolormesh(lon, lat, np.squeeze(salt[k-3,:,:]), vmin=33, vmax=38)
+    #m.pcolormesh(lon, lat, np.squeeze(salt[k-3,:,:]), vmin=33, vmax=38)
+    m.pcolormesh(lon, lat, np.squeeze(temp[k,:,:]), vmin=0, vmax=30)
     m.drawcoastlines(zorder=5)
     m.drawcountries(zorder=4)
     m.fillcontinents(color=('0.7'),lake_color='aqua',zorder=3)
@@ -525,10 +668,13 @@ for k in (3, 4 ,5):
     labels=[0, 0, 0, 0], dashes=[1,3], zorder=7)
     plt.title('Salt'); plt.colorbar()
 
-plt.show()
+plt.savefig('../figures/initial_field/temp_levels1-6.png')
+#plt.show()
 
 print('==> ############################################  ...\n')
 print('==>                 !! DONE !!                    ...\n')
 print('==> ############################################  ...\n')
 
 ##############################################################################
+
+
